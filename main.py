@@ -1,5 +1,7 @@
 import pygame
+from pygame import mixer
 
+from entity.hero import Hero
 from level.level1 import Level1
 from level.level2 import Level2
 
@@ -8,9 +10,20 @@ clock = pygame.time.Clock()
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
 
+# Starting the mixer
+mixer.init()
+
+# Loading & playing the song
+mixer.music.load("smd/Messersmith.mp3")
+
 pygame.init()
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption("Hero Vs Orc")
+
+# hero
+hero = Hero(screen)
+heroGroup = pygame.sprite.GroupSingle()
+heroGroup.add(hero)
 
 # buttons
 rasterX = 225
@@ -52,6 +65,16 @@ while game_running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             game_running = False
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_a:
+                hero.walk(-1)
+            elif event.key == pygame.K_d:
+                hero.walk(1)
+        if event.type == pygame.KEYUP:
+            if event.key == pygame.K_a:
+                hero.walk(-0.000000000000001)
+            elif event.key == pygame.K_d:
+                hero.walk(0)
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouseDown = True
@@ -63,12 +86,26 @@ while game_running:
                     if imgrect.collidepoint(mousePos):
                         button_infolist[i] = [x, y, width, height, not active]
 
+                        match i:
+                            case 0:
+                                mixer.music.play()
+                            case 1:
+                                mixer.music.pause()
+                            case 2:
+                                mixer.music.unpause()
+                            case 3:
+                                pass
+                            case 4:
+                                mixer.music.set_volume(0.5)
+                            case 5:
+                                mixer.music.set_volume(1)
+
         if event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 mouseDown = False
 
     if level == 1:
-        #     level1.update()
+        level1.update()
         pass
     else:
         level2.update()
@@ -81,8 +118,10 @@ while game_running:
         else:
             image = img_list_passive[i]
 
-        screen.blit(image, (x, y))
+        # screen.blit(image, (x, y))
 
+    hero.update()
+    heroGroup.draw(screen)
     pygame.display.update()
 
 pygame.quit()
