@@ -32,10 +32,31 @@ class Hero(Sprite):
         self.rect.center = (100, 510)
 
         self.direction = 0
+        self.last_direction = self.direction
         self.step_distance_x = 5
         self.calc_x = self.rect.x
+        self.score = 0
+
+        self.fight = False
+        self.fight_counter = 0
+
+    def fighting(self, fight):
+        self.fight = fight
+
+        if self.fight:
+            self.fight_counter += 1
+
+    def get_fighting(self):
+        if self.fight:
+            return 1
+        else:
+            return self.fight_counter
+
+    def add_score(self, emeralds):
+        self.score += emeralds
 
     def walk(self, direction):
+        self.last_direction = self.direction
         self.direction = direction
 
     def update_position(self):
@@ -50,10 +71,8 @@ class Hero(Sprite):
 
         self.rect.x = self.calc_x
 
-    def update(self):
-        self.update_position()
-
-        if -0.1 < self.direction < 0.1:
+    def update_image(self, direction):
+        if -0.1 < direction < 0.1:
             self.walk_animation_index = 0
         else:
             self.walk_animation_index += 1
@@ -61,7 +80,21 @@ class Hero(Sprite):
             if self.walk_animation_index >= self.max_walk_animation_index:
                 self.walk_animation_index = 0
 
-        if self.direction < 0:
+        if direction < 0:
             self.image = self.img_left[self.walk_animation_index]
         else:
             self.image = self.img_right[self.walk_animation_index]
+
+    def update(self):
+        if self.fight:
+            self.fight_counter += 1
+            self.update_image(self.last_direction)
+
+            print(self.fight_counter, 2 * len(self.img_left), self.walk_animation_index)
+            if self.fight_counter >= 2 * len(self.img_left) and self.walk_animation_index == 0:
+                self.fight = False
+                self.fight_counter = -1
+        else:
+            self.fight_counter = 0
+            self.update_position()
+            self.update_image(self.direction)

@@ -1,7 +1,11 @@
+import random
+
 import pygame
 from pygame import mixer
 
+from entity.chest import Chest
 from entity.hero import Hero
+from entity.orc import Orc
 from level.level1 import Level1
 from level.level2 import Level2
 
@@ -24,6 +28,21 @@ pygame.display.set_caption("Hero Vs Orc")
 hero = Hero(screen)
 heroGroup = pygame.sprite.GroupSingle()
 heroGroup.add(hero)
+
+pygame.font.init()
+my_font = pygame.font.SysFont('Comic Sans MS', 30)
+
+# orc
+orc = Orc(screen, 600, 510)
+orcGroup = pygame.sprite.Group()
+orcGroup.add(orc)
+
+# chest
+chestGroup = pygame.sprite.Group()
+
+for i in range(5):
+    chest = Chest(screen, random.randint(80 * i, 80 * (i + 1)))
+    chestGroup.add(chest)
 
 # buttons
 rasterX = 225
@@ -53,12 +72,19 @@ for j in range(3):
         anzahl += 1
 
 # levels
-level = 1
+level = 2
 
 level1 = Level1(screen)
-level2 = Level2(screen)
+level2 = Level2(screen, hero, chestGroup, orcGroup)
 
 game_running = True
+
+chest_tick_spawn = 0
+max_chest_tick_spawn = 60
+
+orc_tick_spawn = 0
+max_orc_tick_spawn = 60
+
 while game_running:
     clock.tick(30)
 
@@ -75,6 +101,11 @@ while game_running:
                 hero.walk(-0.000000000000001)
             elif event.key == pygame.K_d:
                 hero.walk(0)
+            elif event.key == pygame.K_e:
+                for chest in chestGroup:
+                    if hero.rect.colliderect(chest.rect):
+                        chest.open(hero)
+
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
                 mouseDown = True
@@ -106,7 +137,6 @@ while game_running:
 
     if level == 1:
         level1.update()
-        pass
     else:
         level2.update()
 
@@ -120,8 +150,41 @@ while game_running:
 
         # screen.blit(image, (x, y))
 
-    hero.update()
+    if hero.get_fighting() < 0:
+        pygame.sprite.spritecollide(hero, orcGroup, True)
+        hero.add_score(random.randint(1, 5))
+
+    if pygame.sprite.spritecollide(hero, orcGroup, False):
+        hero.fighting(True)
+
+        for orc in orcGroup:
+            if orc.rect.colliderect(hero.rect):
+                orc.fighting(True)
+
+    chest_tick_spawn += 1
+    orc_tick_spawn += 1
+
+    if chest_tick_spawn % max_chest_tick_spawn == 0:
+        if len(chestGroup) < random.randint(0, 2):
+            max_chest_tick_spawn += 60
+
+            chestGroup.add(Chest(screen, (screen.get_width())))
+    if orc_tick_spawn % max_orc_tick_spawn == 0:
+        if len(chestGroup) < random.randint(0, 3):
+            orcGroup.add(Orc(screen, (screen.get_width()), 510))
+
+    chestGroup.update()
+    chestGroup.draw(screen)
+
+    heroGroup.update()
     heroGroup.draw(screen)
+
+    orcGroup.update()
+    orcGroup.draw(screen)
+
+    text_surface = my_font.render('Score: ' + str(hero.score), False, (0, 0, 0))
+    screen.blit(text_surface, (screen.get_width() - text_surface.get_width() - 25, text_surface.get_height()))
+
     pygame.display.update()
 
 pygame.quit()
